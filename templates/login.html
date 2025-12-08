@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col justify-center sm:py-12">
+  <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+    <div class="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
+      <div class="max-w-md mx-auto">
+        <div class="divide-y divide-gray-200">
+          <div class="py-8 text-base leading-6 space-y-4 text-gray-700 sm:text-lg sm:leading-7">
+            <h2 class="text-3xl font-bold mb-8 text-center text-gray-800">Welcome Back</h2>
+            
+            <!-- Alert for errors -->
+            <div id="errorAlert" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span id="errorMessage" class="block sm:inline"></span>
+            </div>
+
+            <!-- Alert for success -->
+            <div id="successAlert" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+              <span id="successMessage" class="block sm:inline"></span>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+              <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" id="username" name="username" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+              </div>
+
+              <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+              </div>
+
+              <div class="pt-4">
+                <button type="submit" 
+                        class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  Login
+                </button>
+              </div>
+            </form>
+            <div class="text-center mt-4">
+                <a href="/register" class="text-indigo-600 hover:text-indigo-500">Don't have an account? Register</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('loginForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const errorAlert = document.getElementById('errorAlert');
+        const successAlert = document.getElementById('successAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        
+        // Reset alerts
+        errorAlert.classList.add('hidden');
+        successAlert.classList.add('hidden');
+        
+        // Get form data
+        const formData = new FormData(this);
+        
+        try {
+            const response = await fetch('/users/login', {
+                method: 'POST',
+                body: formData // fetch automatically sets Content-Type to multipart/form-data or x-www-form-urlencoded depending on body
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                // Store token
+                localStorage.setItem('access_token', result.access_token);
+                localStorage.setItem('token_type', result.token_type);
+                
+                successMessage.textContent = "Login successful! Redirecting...";
+                successAlert.classList.remove('hidden');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                errorMessage.textContent = result.error || result.detail || "Login failed";
+                errorAlert.classList.remove('hidden');
+            }
+        } catch (error) {
+            errorMessage.textContent = "An error occurred. Please try again.";
+            errorAlert.classList.remove('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}
