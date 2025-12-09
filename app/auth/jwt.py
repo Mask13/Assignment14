@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from uuid import UUID
 import secrets
 
-from app.config import get_settings
+from app.core.config import get_settings
 from app.auth.redis import add_to_blacklist, is_blacklisted
 from app.schemas.token import TokenType
 from app.database import get_db

@@ -255,7 +255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('calculationCard').classList.add('hidden');
       document.getElementById('errorState').classList.add('hidden');
       
-      const response = await fetch(`/api/calculations/${calcId}`, {
+      const response = await fetch(`/calculations/${calcId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         <div>
           <p class="text-sm text-gray-500 uppercase font-semibold tracking-wide mb-1">Input Values</p>
-          <p class="font-medium text-gray-800">${calc.inputs && Array.isArray(calc.inputs) ? calc.inputs.join(', ') : ''}</p>
+          <p class="font-medium text-gray-800">${calc.inputs.join(', ')}</p>
         </div>
         
         <div>
@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Set Edit link
       const editLink = document.getElementById('editLink');
       if (editLink) {
-        editLink.setAttribute('href', `/calculations/${calc.id}/edit`);
+        editLink.setAttribute('href', `/dashboard/edit/${calc.id}`);
       }
       
       // Set up delete button
@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               deleteBtn.innerHTML = '<svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...';
               deleteBtn.disabled = true;
               
-              const response = await fetch(`/api/calculations/${calc.id}`, {
+              const response = await fetch(`/calculations/${calc.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
               });

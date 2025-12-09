@@ -1,3 +1,5 @@
+# app/schemas/user.py
+
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -152,3 +154,45 @@ class UserUpdate(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+class PasswordUpdate(BaseModel):
+    """Schema for password updates"""
+    current_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        example="OldPass123!",
+        description="Current password"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        example="NewPass123!",
+        description="New password"
+    )
+    confirm_new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        example="NewPass123!",
+        description="Confirm new password"
+    )
+
+    @model_validator(mode='after')
+    def verify_passwords(self) -> "PasswordUpdate":
+        """Verify that new password and confirmation match"""
+        if self.new_password != self.confirm_new_password:
+            raise ValueError("New password and confirmation do not match")
+        if self.current_password == self.new_password:
+            raise ValueError("New password must be different from current password")
+        return self
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "current_password": "OldPass123!",
+                "new_password": "NewPass123!",
+                "confirm_new_password": "NewPass123!"
+            }
+        }
+    )

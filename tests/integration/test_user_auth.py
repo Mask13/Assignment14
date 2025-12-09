@@ -28,6 +28,7 @@ def test_user_registration(db_session, fake_user_data):
     fake_user_data['password'] = "TestPass123"
     
     user = User.register(db_session, fake_user_data)
+    db_session.commit()
     
     assert user.first_name == fake_user_data['first_name']
     assert user.last_name == fake_user_data['last_name']
@@ -59,6 +60,7 @@ def test_duplicate_user_registration(db_session):
     
     # Register first user
     first_user = User.register(db_session, user1_data)
+    db_session.commit()
     db_session.refresh(first_user)
     
     # Try to register second user with same email
@@ -70,6 +72,7 @@ def test_user_authentication(db_session, fake_user_data):
     # Use fake_user_data from fixture
     fake_user_data['password'] = "TestPass123"
     user = User.register(db_session, fake_user_data)
+    db_session.commit()
     
     # Test successful authentication
     auth_result = User.authenticate(
@@ -88,6 +91,7 @@ def test_user_last_login_update(db_session, fake_user_data):
     """Test that last_login is updated on authentication"""
     fake_user_data['password'] = "TestPass123"
     user = User.register(db_session, fake_user_data)
+    db_session.commit()
     
     # Authenticate and check last_login
     assert user.last_login is None

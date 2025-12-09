@@ -44,7 +44,7 @@
         <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
         </svg>
-        <a href="/calculations/{{ calc_id }}" class="text-gray-700 hover:text-blue-700 ml-1 md:ml-2">View Calculation</a>
+        <a href="/dashboard/view/{{ calc_id }}" class="text-gray-700 hover:text-blue-700 ml-1 md:ml-2">View Calculation</a>
       </div>
     </li>
     <li>
@@ -169,7 +169,7 @@
           Save Changes
         </button>
         <a 
-          href="/calculations/{{ calc_id }}"
+          href="/dashboard/view/{{ calc_id }}"
           class="bg-gray-100 text-gray-700 border border-gray-300 px-6 py-2 rounded-md hover:bg-gray-200 transition-colors duration-200
                 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center"
         >
@@ -370,7 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('editCard').classList.add('hidden');
       document.getElementById('errorState').classList.add('hidden');
       
-      const response = await fetch(`/api/calculations/${calcId}`, {
+      const response = await fetch(`/calculations/${calcId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -399,12 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Populate form fields
       calcTypeInput.value = calc.type;
-      if (calc.inputs && Array.isArray(calc.inputs)) {
-        calcInputsInput.value = calc.inputs.join(', ');
-      } else {
-        console.warn('Calculation inputs missing or invalid:', calc);
-        calcInputsInput.value = '';
-      }
+      calcInputsInput.value = calc.inputs.join(', ');
       
       // Update the preview
       updatePreview();
@@ -474,7 +469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
 
     try {
-      const response = await fetch(`/api/calculations/${calcId}`, {
+      const response = await fetch(`/calculations/${calcId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
