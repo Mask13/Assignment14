@@ -1,7 +1,8 @@
 # app/schemas/__init__.py
 
 from .base import UserBase, PasswordMixin, UserCreate, UserLogin
-from .user import UserResponse, Token, TokenData
+from .user import UserResponse
+from .token import Token, TokenData
 from .calculation import (
     CalculationType,
     CalculationBase,

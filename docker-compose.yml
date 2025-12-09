@@ -13,9 +13,20 @@ services:
       PYTHONDONTWRITEBYTECODE: 1
       PYTHONUNBUFFERED: 1
       DATABASE_URL: postgresql://postgres:postgres@db:5432/fastapi_db
+      REDIS_URL: redis://redis:6379/0
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
+      - redis
+    networks:
+      - app-network
+
+  # Service: redis
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
     networks:
       - app-network
 
