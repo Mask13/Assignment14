@@ -15,60 +15,38 @@ def test_hello_world(page, fastapi_server):
     that the server is running and serving the correct template.
     """
     # Navigate the browser to the homepage URL of the FastAPI application.
-    page.goto('http://localhost:8000')
+    page.goto(f'{fastapi_server}')
     
-    # Use an assertion to check that the text within the first <h1> tag is exactly "Calculator".
+    # Use an assertion to check that the text within the first <h1> tag is exactly "Welcome to the Calculations App".
     # If the text does not match, the test will fail.
-    expect(page.locator('h1')).to_have_text('Calculator')
+    expect(page.locator('h1')).to_have_text('Welcome to the Calculations App')
 
 @pytest.mark.e2e
 def test_calculator_add(page, fastapi_server):
     """
     Test the addition functionality of the calculator.
-
-    This test simulates a user performing an addition operation using the calculator
-    on the frontend. It fills in two numbers, clicks the "Add" button, and verifies
-    that the result displayed is correct.
+    
+    This test is now covered by test_calculator_auth.py as calculation requires authentication.
+    We will just verify that the calculator is NOT present on the home page.
     """
     # Navigate the browser to the homepage URL of the FastAPI application.
-    page.goto('http://localhost:8000')
+    page.goto(f'{fastapi_server}')
     
-    # Fill in the first number input field (with id 'a') with the value '10'.
-    page.fill('#a', '10')
-    
-    # Fill in the second number input field (with id 'b') with the value '5'.
-    page.fill('#b', '5')
-    
-    # Click the button that has the exact text "Add". This triggers the addition operation.
-    page.click('button:text("Add")')
-    
-    # Use an assertion to check that the text within the result div (with id 'resultText') is exactly "Result: 15".
-    # This verifies that the addition operation was performed correctly and the result is displayed as expected.
-    expect(page.locator('#resultText')).to_have_text('Result: 15')
+    # Verify that the calculator inputs are NOT visible
+    expect(page.locator('#a')).not_to_be_visible()
+    expect(page.locator('#b')).not_to_be_visible()
 
 @pytest.mark.e2e
 def test_calculator_divide_by_zero(page, fastapi_server):
     """
     Test the divide by zero functionality of the calculator.
-
-    This test simulates a user attempting to divide a number by zero using the calculator.
-    It fills in the numbers, clicks the "Divide" button, and verifies that the appropriate
-    error message is displayed. This ensures that the application correctly handles invalid
-    operations and provides meaningful feedback to the user.
+    
+    This test is now covered by test_calculator_auth.py as calculation requires authentication.
+    We will just verify that the calculator is NOT present on the home page.
     """
     # Navigate the browser to the homepage URL of the FastAPI application.
-    page.goto('http://localhost:8000')
+    page.goto(f'{fastapi_server}')
     
-    # Fill in the first number input field (with id 'a') with the value '10'.
-    page.fill('#a', '10')
-    
-    # Fill in the second number input field (with id 'b') with the value '0', attempting to divide by zero.
-    page.fill('#b', '0')
-    
-    # Click the button that has the exact text "Divide". This triggers the division operation.
-    page.click('button:text("Divide")')
-    
-    # Use an assertion to check that the text within the result div (with id 'resultText') is exactly
-    # "Error: Cannot divide by zero!". This verifies that the application handles division by zero
-    # gracefully and displays the correct error message to the user.
-    expect(page.locator('#resultText')).to_have_text('Error: Cannot divide by zero!')
+    # Verify that the calculator inputs are NOT visible
+    expect(page.locator('#a')).not_to_be_visible()
+    expect(page.locator('#b')).not_to_be_visible()

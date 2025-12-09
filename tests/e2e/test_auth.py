@@ -2,16 +2,17 @@ import pytest
 from playwright.sync_api import expect
 from faker import Faker
 import requests
+import uuid
 
 fake = Faker()
 
 @pytest.mark.e2e
 def test_register_success(page, fastapi_server):
-    username = fake.unique.user_name()
-    email = fake.unique.email()
-    password = "Password123"
+    username = f"{fake.user_name()}_{str(uuid.uuid4())[:8]}"
+    email = f"{str(uuid.uuid4())[:8]}_{fake.email()}"
+    password = "Password123!"
     
-    page.goto("http://localhost:8000/register")
+    page.goto(f"{fastapi_server}register")
     
     page.fill("#username", username)
     page.fill("#email", email)
@@ -30,21 +31,22 @@ def test_register_success(page, fastapi_server):
 
 @pytest.mark.e2e
 def test_login_success(page, fastapi_server):
-    username = fake.unique.user_name()
-    email = fake.unique.email()
-    password = "Password123"
+    username = f"{fake.user_name()}_{str(uuid.uuid4())[:8]}"
+    email = f"{str(uuid.uuid4())[:8]}_{fake.email()}"
+    password = "Password123!"
     
     # Register via API
-    response = requests.post("http://localhost:8000/users/register", json={
+    response = requests.post(f"{fastapi_server}auth/register", json={
         "username": username,
         "email": email,
         "first_name": "Test",
         "last_name": "User",
-        "password": password
+        "password": password,
+        "confirm_password": password
     })
     assert response.status_code == 201
     
-    page.goto("http://localhost:8000/login")
+    page.goto(f"{fastapi_server}login")
     
     page.fill("#username", username)
     page.fill("#password", password)
@@ -59,7 +61,7 @@ def test_login_success(page, fastapi_server):
 
 @pytest.mark.e2e
 def test_register_short_password(page, fastapi_server):
-    page.goto("http://localhost:8000/register")
+    page.goto(f"{fastapi_server}register")
     
     page.fill("#username", fake.unique.user_name())
     page.fill("#email", fake.unique.email())
@@ -71,11 +73,11 @@ def test_register_short_password(page, fastapi_server):
     page.click("button[type='submit']")
     
     # Check for error message
-    expect(page.locator("#errorMessage")).to_contain_text("Password must be at least 6 characters long")
+    expect(page.locator("#errorMessage")).to_contain_text("Password must be at least 8 characters long and contain uppercase, lowercase, and numbers")
 
 @pytest.mark.e2e
 def test_login_invalid_credentials(page, fastapi_server):
-    page.goto("http://localhost:8000/login")
+    page.goto(f"{fastapi_server}login")
     
     page.fill("#username", "nonexistentuser")
     page.fill("#password", "wrongpassword")
@@ -83,4 +85,4 @@ def test_login_invalid_credentials(page, fastapi_server):
     page.click("button[type='submit']")
     
     # Check for error message
-    expect(page.locator("#errorMessage")).to_contain_text("Incorrect username or password")
+    expect(page.locator("#errorMessage")).to_contain_text("Invalid username or password")

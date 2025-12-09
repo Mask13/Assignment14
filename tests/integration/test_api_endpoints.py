@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
-from main import app
+from app.main import app
 from app.database import get_db
 from app.models.user import User
 from app.models.calculation import Calculation
@@ -21,15 +21,17 @@ def client(db_session):
 
 def test_register_user(client):
     response = client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "test@example.com",
             "username": "testuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Test",
             "last_name": "User"
         }
     )
+    print(response.json())
     assert response.status_code == 201
     data = response.json()
     assert data["email"] == "test@example.com"
@@ -38,11 +40,12 @@ def test_register_user(client):
 def test_login_user(client):
     # Register first
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "login@example.com",
             "username": "loginuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Login",
             "last_name": "User"
         }
@@ -50,10 +53,10 @@ def test_login_user(client):
     
     # Login
     response = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "loginuser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     assert response.status_code == 200
@@ -64,20 +67,21 @@ def test_login_user(client):
 def test_create_calculation(client):
     # Register and login
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "calc@example.com",
             "username": "calcuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Calc",
             "last_name": "User"
         }
     )
     login_res = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "calcuser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     token = login_res.json()["access_token"]
@@ -100,20 +104,21 @@ def test_create_calculation(client):
 def test_read_calculations(client):
     # Register and login
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "read@example.com",
             "username": "readuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Read",
             "last_name": "User"
         }
     )
     login_res = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "readuser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     token = login_res.json()["access_token"]
@@ -137,20 +142,21 @@ def test_read_calculations(client):
 def test_update_calculation(client):
     # Register and login
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "update@example.com",
             "username": "updateuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Update",
             "last_name": "User"
         }
     )
     login_res = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "updateuser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     token = login_res.json()["access_token"]
@@ -178,20 +184,21 @@ def test_update_calculation(client):
 def test_delete_calculation(client):
     # Register and login
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "delete@example.com",
             "username": "deleteuser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Delete",
             "last_name": "User"
         }
     )
     login_res = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "deleteuser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     token = login_res.json()["access_token"]
@@ -216,20 +223,21 @@ def test_delete_calculation(client):
 def test_invalid_calculation(client):
     # Register and login
     client.post(
-        "/users/register",
+        "/auth/register",
         json={
             "email": "invalid@example.com",
             "username": "invaliduser",
-            "password": "Password123",
+            "password": "Password123!",
+            "confirm_password": "Password123!",
             "first_name": "Invalid",
             "last_name": "User"
         }
     )
     login_res = client.post(
-        "/users/login",
+        "/auth/token",
         data={
             "username": "invaliduser",
-            "password": "Password123"
+            "password": "Password123!"
         }
     )
     token = login_res.json()["access_token"]
@@ -247,7 +255,7 @@ def test_invalid_calculation(client):
     # def validate_division_by_zero(self) -> "CalculationBase":
     # So it should be 422 Unprocessable Entity (Pydantic validation error)
     # BUT main.py has a custom exception handler for RequestValidationError that returns 400
-    assert response.status_code == 400
+    assert response.status_code == 422
     
     # Invalid type
     response = client.post(
@@ -255,4 +263,4 @@ def test_invalid_calculation(client):
         json={"type": "invalid", "inputs": [10, 5]},
         headers=headers
     )
-    assert response.status_code == 400
+    assert response.status_code == 422

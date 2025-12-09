@@ -1,13 +1,15 @@
 # app/auth/redis.py
-import aioredis
+import redis.asyncio as redis
 from app.core.config import get_settings
 
 settings = get_settings()
 
 async def get_redis():
     if not hasattr(get_redis, "redis"):
-        get_redis.redis = await aioredis.from_url(
-            settings.REDIS_URL or "redis://localhost"
+        get_redis.redis = redis.from_url(
+            settings.REDIS_URL or "redis://localhost",
+            encoding="utf-8",
+            decode_responses=True
         )
     return get_redis.redis
 

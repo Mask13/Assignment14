@@ -1,18 +1,24 @@
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+import uuid
 
 from app.auth.dependencies import get_current_user, get_current_active_user
 from app.models.user import User
 
 
-def create_user_and_token(db: Session, username: str = "testuser", password: str = "StrongPass1"):
+def create_user_and_token(db: Session, username: str = None, password: str = "StrongPass1!"):
+    unique_id = str(uuid.uuid4())[:8]
+    if not username:
+        username = f"user_{unique_id}"
+        
     data = {
         "first_name": "Test",
         "last_name": "User",
         "email": f"{username}@example.com",
         "username": username,
         "password": password,
+        "confirm_password": password
     }
     user = User.register(db, data)
     db.commit()
