@@ -3,6 +3,7 @@ Unit tests for user profile functionality
 Tests password change logic, profile update validation, and edge cases
 """
 import pytest
+import uuid
 from pydantic import ValidationError
 from app.schemas.user import UserUpdate, PasswordUpdate
 from app.models.user import User
@@ -169,10 +170,11 @@ def test_user_update_empty_last_name():
 
 def test_user_verify_password_correct(db_session: Session):
     """Test verifying correct password"""
-    # Create a test user
+    # Create a test user with unique email/username
+    unique_id = str(uuid.uuid4())[:8]
     user = User(
-        username="testuser",
-        email="test@example.com",
+        username=f"testuser_{unique_id}",
+        email=f"test_{unique_id}@example.com",
         first_name="Test",
         last_name="User",
         password=User.hash_password("TestPassword123!")
@@ -186,10 +188,11 @@ def test_user_verify_password_correct(db_session: Session):
 
 def test_user_verify_password_incorrect(db_session: Session):
     """Test verifying incorrect password"""
-    # Create a test user
+    # Create a test user with unique email/username
+    unique_id = str(uuid.uuid4())[:8]
     user = User(
-        username="testuser",
-        email="test@example.com",
+        username=f"testuser_{unique_id}",
+        email=f"test_{unique_id}@example.com",
         first_name="Test",
         last_name="User",
         password=User.hash_password("TestPassword123!")
@@ -218,10 +221,11 @@ def test_user_hash_password_different_hashes():
 
 def test_user_update_method(db_session: Session):
     """Test User.update() method updates fields correctly"""
-    # Create a test user
+    # Create a test user with unique email/username
+    unique_id = str(uuid.uuid4())[:8]
     user = User(
-        username="testuser",
-        email="test@example.com",
+        username=f"testuser_{unique_id}",
+        email=f"test_{unique_id}@example.com",
         first_name="Test",
         last_name="User",
         password=User.hash_password("TestPassword123!")
@@ -234,15 +238,16 @@ def test_user_update_method(db_session: Session):
     # Update user
     import time
     time.sleep(0.1)  # Ensure time difference
+    new_email = f"newemail_{unique_id}@example.com"
     user.update(
         first_name="NewFirst",
-        email="newemail@example.com"
+        email=new_email
     )
     db_session.commit()
     
     # Verify updates
     assert user.first_name == "NewFirst"
-    assert user.email == "newemail@example.com"
+    assert user.email == new_email
     assert user.last_name == "User"  # Unchanged
     assert user.updated_at > original_updated_at
 
@@ -253,11 +258,12 @@ def test_user_update_method(db_session: Session):
 
 def test_password_change_flow(db_session: Session):
     """Test complete password change flow"""
-    # Create user with initial password
+    # Create user with initial password and unique email/username
+    unique_id = str(uuid.uuid4())[:8]
     initial_password = "InitialPassword123!"
     user = User(
-        username="testuser",
-        email="test@example.com",
+        username=f"testuser_{unique_id}",
+        email=f"test_{unique_id}@example.com",
         first_name="Test",
         last_name="User",
         password=User.hash_password(initial_password)
@@ -282,11 +288,12 @@ def test_password_change_flow(db_session: Session):
 
 def test_password_change_validates_current_password(db_session: Session):
     """Test that password change requires correct current password"""
-    # Create user
+    # Create user with unique email/username
+    unique_id = str(uuid.uuid4())[:8]
     current_password = "CurrentPassword123!"
     user = User(
-        username="testuser",
-        email="test@example.com",
+        username=f"testuser_{unique_id}",
+        email=f"test_{unique_id}@example.com",
         first_name="Test",
         last_name="User",
         password=User.hash_password(current_password)

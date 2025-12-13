@@ -3,6 +3,7 @@ Integration tests for user profile endpoints
 Tests profile retrieval, updates, and password changes with database interactions
 """
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.main import app
@@ -27,13 +28,18 @@ def client(db_session):
 
 @pytest.fixture
 def authenticated_user(client):
-    """Create and authenticate a test user"""
+    """Create and authenticate a test user with unique credentials"""
+    # Generate unique credentials for each test
+    unique_id = str(uuid.uuid4())[:8]
+    username = f"testuser_{unique_id}"
+    email = f"testuser_{unique_id}@example.com"
+    
     # Register user
     register_response = client.post(
         "/auth/register",
         json={
-            "email": "testuser@example.com",
-            "username": "testuser",
+            "email": email,
+            "username": username,
             "password": "Password123!",
             "confirm_password": "Password123!",
             "first_name": "Test",
@@ -46,7 +52,7 @@ def authenticated_user(client):
     login_response = client.post(
         "/auth/token",
         data={
-            "username": "testuser",
+            "username": username,
             "password": "Password123!"
         }
     )
@@ -55,8 +61,8 @@ def authenticated_user(client):
     
     return {
         "token": token,
-        "username": "testuser",
-        "email": "testuser@example.com",
+        "username": username,
+        "email": email,
         "headers": {"Authorization": f"Bearer {token}"}
     }
 
@@ -74,8 +80,8 @@ def test_get_current_user_profile_success(client, authenticated_user):
     
     assert response.status_code == 200
     data = response.json()
-    assert data["username"] == "testuser"
-    assert data["email"] == "testuser@example.com"
+    assert data["username"] == authenticated_user["username"]
+    assert data["email"] == authenticated_user["email"]
     assert data["first_name"] == "Test"
     assert data["last_name"] == "User"
     assert "id" in data
@@ -146,40 +152,42 @@ def test_update_profile_partial_fields(client, authenticated_user, db_session):
     assert data["first_name"] == "NewFirst"
     assert data["last_name"] == "NewLast"
     # Email and username should remain unchanged
-    assert data["email"] == "testuser@example.com"
-    assert data["username"] == "testuser"
+    assert data["email"] == authenticated_user["email"]
+    assert data["username"] == authenticated_user["username"]
 
 
 def test_update_profile_email_only(client, authenticated_user):
     """Test updating only email"""
+    new_email = f"newemail_{str(uuid.uuid4())[:8]}@example.com"
     response = client.put(
         "/users/me/profile",
         headers=authenticated_user["headers"],
         json={
-            "email": "newemail@example.com"
+            "email": new_email
         }
     )
     
     assert response.status_code == 200
     data = response.json()
-    assert data["email"] == "newemail@example.com"
-    assert data["username"] == "testuser"  # Unchanged
+    assert data["email"] == new_email
+    assert data["username"] == authenticated_user["username"]  # Unchanged
 
 
 def test_update_profile_username_only(client, authenticated_user):
     """Test updating only username"""
+    new_username = f"newusername_{str(uuid.uuid4())[:8]}"
     response = client.put(
         "/users/me/profile",
         headers=authenticated_user["headers"],
         json={
-            "username": "newusername"
+            "username": new_username
         }
     )
     
     assert response.status_code == 200
     data = response.json()
-    assert data["username"] == "newusername"
-    assert data["email"] == "testuser@example.com"  # Unchanged
+    assert data["username"] == new_username
+    assert data["email"] == authenticated_user["email"]  # Unchanged
 
 
 def test_update_profile_no_fields(client, authenticated_user):
@@ -256,14 +264,14 @@ def test_update_profile_same_email(client, authenticated_user):
         "/users/me/profile",
         headers=authenticated_user["headers"],
         json={
-            "email": "testuser@example.com",
+            "email": authenticated_user["email"],
             "first_name": "UpdatedName"
         }
     )
     
     assert response.status_code == 200
     data = response.json()
-    assert data["email"] == "testuser@example.com"
+    assert data["email"] == authenticated_user["email"]
     assert data["first_name"] == "UpdatedName"
 
 
@@ -328,7 +336,7 @@ def test_change_password_success(client, authenticated_user, db_session):
     old_login = client.post(
         "/auth/token",
         data={
-            "username": "testuser",
+            "username": authenticated_user["username"],
             "password": "Password123!"
         }
     )
@@ -338,7 +346,7 @@ def test_change_password_success(client, authenticated_user, db_session):
     new_login = client.post(
         "/auth/token",
         data={
-            "username": "testuser",
+            "username": authenticated_user["username"],
             "password": "NewPassword456!"
         }
     )
@@ -453,7 +461,7 @@ def test_change_password_no_auth(client):
 def test_change_password_updates_timestamp(client, authenticated_user, db_session):
     """Test that changing password updates the updated_at timestamp"""
     # Get original user
-    user = db_session.query(User).filter(User.username == "testuser").first()
+    user = db_session.query(User).filter(User.username == authenticated_user["username"]).first()
     original_updated_at = user.updated_at
     
     import time
@@ -486,11 +494,12 @@ def test_change_password_updates_timestamp(client, authenticated_user, db_sessio
 def test_update_profile_then_login(client, authenticated_user):
     """Test updating username and then logging in with new username"""
     # Update username
+    new_username = f"mynewusername_{str(uuid.uuid4())[:8]}"
     update_response = client.put(
         "/users/me/profile",
         headers=authenticated_user["headers"],
         json={
-            "username": "mynewusername"
+            "username": new_username
         }
     )
     assert update_response.status_code == 200
@@ -499,7 +508,7 @@ def test_update_profile_then_login(client, authenticated_user):
     login_response = client.post(
         "/auth/token",
         data={
-            "username": "mynewusername",
+            "username": new_username,
             "password": "Password123!"
         }
     )
@@ -510,11 +519,12 @@ def test_update_profile_then_login(client, authenticated_user):
 def test_update_email_then_verify_profile(client, authenticated_user):
     """Test updating email and verifying it's reflected in profile"""
     # Update email
+    new_email = f"mynewemail_{str(uuid.uuid4())[:8]}@example.com"
     client.put(
         "/users/me/profile",
         headers=authenticated_user["headers"],
         json={
-            "email": "mynewemail@example.com"
+            "email": new_email
         }
     )
     
@@ -525,4 +535,4 @@ def test_update_email_then_verify_profile(client, authenticated_user):
     )
     
     assert profile_response.status_code == 200
-    assert profile_response.json()["email"] == "mynewemail@example.com"
+    assert profile_response.json()["email"] == new_email

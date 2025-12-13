@@ -202,10 +202,16 @@ def test_update_profile_invalid_email(page, fastapi_server):
     # Try to update with invalid email
     page.fill("#email", "not-an-email")
     
+    # Remove HTML5 validation temporarily to test backend validation
+    page.evaluate("""() => {
+        const form = document.getElementById('profileForm');
+        form.noValidate = true;
+    }""")
+    
     # Submit form
     page.click("#profileForm button[type='submit']")
     
-    # Check for error message
+    # Check for error message from backend
     expect(page.locator("#errorMessage")).to_be_visible(timeout=5000)
 
 
@@ -307,15 +313,20 @@ def test_change_password_weak_password(page, fastapi_server):
     page.goto(f"{fastapi_server}profile")
     page.wait_for_timeout(1000)
     
-    # Try weak password
+    # Try weak password that passes HTML5 validation (>= 8 chars) 
+    # but fails our strength requirements (no uppercase, digit, or special char)
     page.fill("#currentPassword", user["password"])
-    page.fill("#newPassword", "weak")
-    page.fill("#confirmNewPassword", "weak")
+    page.fill("#newPassword", "weakpassword")  # 12 chars but all lowercase
+    page.fill("#confirmNewPassword", "weakpassword")
     
-    # Submit form
+    # Submit form - client-side strength validation will show error
     page.click("#passwordForm button[type='submit']")
     
-    # Check for error message
+    # Wait for JavaScript validation to run
+    page.wait_for_timeout(500)
+    
+    # Check for error message from client-side validation
+    expect(page.locator("#errorAlert")).to_be_visible(timeout=5000)
     expect(page.locator("#errorMessage")).to_be_visible(timeout=5000)
 
 
@@ -365,8 +376,9 @@ def test_complete_profile_workflow(page, fastapi_server):
     expect(page.locator("#successMessage")).to_be_visible(timeout=5000)
     
     # Step 4: Logout
-    page.click("#layoutLogoutBtn")
+    # Set up dialog handler BEFORE clicking
     page.on("dialog", lambda dialog: dialog.accept())
+    page.click("#layoutLogoutBtn")
     page.wait_for_url("**/login", timeout=5000)
     
     # Step 5: Login again
@@ -434,15 +446,16 @@ def test_update_username_then_login(page, fastapi_server):
     expect(page.locator("#successMessage")).to_be_visible(timeout=5000)
     
     # Logout
-    page.click("#layoutLogoutBtn")
+    # Set up dialog handler BEFORE clicking
     page.on("dialog", lambda dialog: dialog.accept())
+    page.click("#layoutLogoutBtn")
     page.wait_for_url("**/login", timeout=5000)
     
     # Login with new username
     login_user(page, fastapi_server, new_username, user["password"])
     
-    # Verify successful login
-    expect(page).to_have_url(fastapi_server)
+    # Verify successful login - should redirect to dashboard
+    expect(page).to_have_url(f"{fastapi_server}dashboard")
 
 
 @pytest.mark.e2e
