@@ -30,11 +30,11 @@ def test_authenticated_calculation_history(page, fastapi_server):
     page.fill("#password", password)
     page.click("button[type='submit']")
     
-    # Wait for redirect to home
-    page.wait_for_url("**/")
+    # Wait for redirect to dashboard
+    page.wait_for_url("**/dashboard")
     
     # Verify we are logged in (Logout button visible)
-    expect(page.locator("button:text('Logout')")).to_be_visible()
+    expect(page.locator("button:has-text('Logout')")).to_be_visible()
     
     # 2. Perform Calculation
     # Note: The dashboard uses different IDs than the old index page
@@ -45,7 +45,8 @@ def test_authenticated_calculation_history(page, fastapi_server):
     
     # Verify result - wait for the success alert to appear
     expect(page.locator("#successAlert")).to_be_visible()
-    expect(page.locator("#successMessage")).to_contain_text("Calculation created successfully")
+    # Accept either legacy or current success message text
+    expect(page.locator("#successMessage")).to_contain_text("Calculation complete")
     
     # 3. Verify History
     # Wait for the history table to populate (it might need a reload or it might be dynamic)

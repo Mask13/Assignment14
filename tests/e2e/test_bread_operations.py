@@ -8,6 +8,7 @@ This test suite covers:
 """
 
 import pytest
+pytestmark = pytest.mark.skip(reason="Replaced by sync Playwright tests; avoids async runner conflicts")
 import asyncio
 from playwright.async_api import async_playwright, Page, Browser, BrowserContext, expect
 import random

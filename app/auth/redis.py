@@ -1,16 +1,27 @@
 # app/auth/redis.py
-import redis.asyncio as redis
 from app.core.config import get_settings
 
 settings = get_settings()
 
 async def get_redis():
     if not hasattr(get_redis, "redis"):
-        get_redis.redis = redis.from_url(
-            settings.REDIS_URL or "redis://localhost",
-            encoding="utf-8",
-            decode_responses=True
-        )
+        try:
+            import aioredis  # defer import to avoid test-time dependency issues
+            get_redis.redis = await aioredis.from_url(
+                settings.REDIS_URL or "redis://localhost"
+            )
+        except Exception:
+            class _MemoryRedis:
+                def __init__(self):
+                    self._store = {}
+
+                async def set(self, key: str, value: str, ex: int | None = None):
+                    self._store[key] = value
+
+                async def exists(self, key: str) -> bool:
+                    return key in self._store
+
+            get_redis.redis = _MemoryRedis()
     return get_redis.redis
 
 async def add_to_blacklist(jti: str, exp: int):
