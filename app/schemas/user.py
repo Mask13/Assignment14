@@ -186,6 +186,22 @@ class PasswordUpdate(BaseModel):
         if self.current_password == self.new_password:
             raise ValueError("New password must be different from current password")
         return self
+    
+    @model_validator(mode='after')
+    def validate_password_strength(self) -> "PasswordUpdate":
+        """Validate new password strength requirements"""
+        password = self.new_password
+        if len(password) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isupper() for char in password):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(char.islower() for char in password):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(char.isdigit() for char in password):
+            raise ValueError("Password must contain at least one digit")
+        if not any(char in "!@#$%^&*()_+-=[]{}|;:,.<>?" for char in password):
+            raise ValueError("Password must contain at least one special character")
+        return self
 
     model_config = ConfigDict(
         json_schema_extra={

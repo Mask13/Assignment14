@@ -37,7 +37,7 @@ from app.models.calculation import Calculation  # Database model for calculation
 from app.models.user import User  # Database model for users
 from app.schemas.calculation import CalculationBase, CalculationResponse, CalculationUpdate  # API request/response schemas
 from app.schemas.token import TokenResponse  # API token schema
-from app.schemas.user import UserCreate, UserResponse, UserLogin  # User schemas
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdate, PasswordUpdate  # User schemas
 from app.database import Base, get_db, engine  # Database connection
 
 
@@ -161,6 +161,22 @@ def edit_calculation_page(request: Request, calc_id: str):
     """
     return templates.TemplateResponse("edit_calculation.html", {"request": request, "calc_id": calc_id})
 
+@app.get("/profile", response_class=HTMLResponse, tags=["web"])
+def profile_page(request: Request):
+    """
+    User profile page.
+    
+    Displays the user's profile information and allows updating
+    profile details and changing password.
+    
+    Args:
+        request: The FastAPI request object (required by Jinja2)
+        
+    Returns:
+        HTMLResponse: Rendered profile page template
+    """
+    return templates.TemplateResponse("profile.html", {"request": request})
+
 
 # ------------------------------------------------------------------------------
 # Health Endpoint
@@ -254,6 +270,136 @@ def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = D
         "access_token": auth_result["access_token"],
         "token_type": "bearer"
     }
+
+
+# ------------------------------------------------------------------------------
+# User Profile Endpoints
+# ------------------------------------------------------------------------------
+@app.get("/users/me", response_model=UserResponse, tags=["users"])
+def get_current_user_profile(
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Get the current authenticated user's profile information.
+    
+    Returns:
+        UserResponse: The current user's profile data
+    """
+    return current_user
+
+
+@app.put("/users/me/profile", response_model=UserResponse, tags=["users"])
+def update_user_profile(
+    profile_data: UserUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update the current authenticated user's profile information.
+    
+    Allows updating: first_name, last_name, email, username
+    All fields are optional - only provided fields will be updated.
+    
+    Args:
+        profile_data: UserUpdate schema with fields to update
+        current_user: Current authenticated user
+        db: Database session
+        
+    Returns:
+        UserResponse: Updated user profile
+        
+    Raises:
+        HTTPException: If email or username is already taken
+    """
+    # Build update dictionary with only provided fields
+    update_data = profile_data.model_dump(exclude_unset=True)
+    
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields provided for update"
+        )
+    
+    # Check if email is being updated and if it's already taken
+    if "email" in update_data and update_data["email"] != current_user.email:
+        existing_user = db.query(User).filter(User.email == update_data["email"]).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+    
+    # Check if username is being updated and if it's already taken
+    if "username" in update_data and update_data["username"] != current_user.username:
+        existing_user = db.query(User).filter(User.username == update_data["username"]).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already taken"
+            )
+    
+    # Update user fields
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
+    
+    # Update timestamp
+    current_user.updated_at = datetime.now(timezone.utc)
+    
+    try:
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update profile: {str(e)}"
+        )
+
+
+@app.put("/users/me/password", tags=["users"])
+def change_password(
+    password_data: PasswordUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Change the current authenticated user's password.
+    
+    Requires the current password for verification and a new password.
+    The new password must be different from the current password.
+    
+    Args:
+        password_data: PasswordUpdate schema with current and new passwords
+        current_user: Current authenticated user
+        db: Database session
+        
+    Returns:
+        dict: Success message
+        
+    Raises:
+        HTTPException: If current password is incorrect
+    """
+    # Verify current password
+    if not current_user.verify_password(password_data.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Hash and update password
+    current_user.password = User.hash_password(password_data.new_password)
+    current_user.updated_at = datetime.now(timezone.utc)
+    
+    try:
+        db.commit()
+        return {"message": "Password changed successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to change password: {str(e)}"
+        )
 
 
 # ------------------------------------------------------------------------------
